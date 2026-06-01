@@ -2,83 +2,167 @@
 <html dir="rtl" lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title>AI متقدم - MCTS للعبة الدمج</title>
+    <title>AI المتقدم - الفاتحون | تحكم يدوي وتحليل عميق</title>
     <style>
-        /* نفس الاستايل السابق مع تعديل بسيط */
-        *{box-sizing:border-box;}
-        body{background:linear-gradient(135deg,#0a2f1f,#051a0e);font-family:'Segoe UI';display:flex;justify-content:center;align-items:center;min-height:100vh;}
-        .container{background:#000000aa;border-radius:40px;padding:20px;}
-        .grid{display:grid;grid-template-columns:repeat(4,85px);gap:12px;background:#b87c3a;padding:15px;border-radius:24px;}
-        .cell{background:#f7e8c8;border-radius:16px;height:85px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:bold;cursor:pointer;}
-        .cell.empty{background:#dbbb8c;color:#8b694a;}
-        button{background:#f5b642;border:none;padding:10px 20px;margin:10px;border-radius:40px;font-weight:bold;cursor:pointer;}
-        .ai-status{background:#1e2a1ac9;margin-top:20px;padding:15px;border-radius:40px;text-align:center;color:#ffeaac;font-size:1.2rem;}
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background: linear-gradient(135deg, #0a2f1f, #051a0e);
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .main-container {
+            background: #000000aa;
+            border-radius: 48px;
+            padding: 25px;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 20px 30px black;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 85px);
+            gap: 12px;
+            background: #b87c3a;
+            padding: 20px;
+            border-radius: 28px;
+            margin-bottom: 20px;
+        }
+        .cell {
+            background: #f7e8c8;
+            height: 85px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .cell input {
+            width: 70px;
+            height: 70px;
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            font-family: monospace;
+            background: transparent;
+            border: none;
+            border-radius: 16px;
+            color: #3b2a1f;
+            outline: none;
+        }
+        .cell.empty-input {
+            background: #dbbb8c;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        button {
+            background: #f5b642;
+            border: none;
+            padding: 12px 28px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: 0.07s linear;
+            box-shadow: 0 4px 0 #9b5e2c;
+        }
+        button:active {
+            transform: translateY(2px);
+        }
+        .ai-panel {
+            background: #1e2a1ac9;
+            border-radius: 50px;
+            padding: 15px 20px;
+            margin-top: 15px;
+            text-align: center;
+            color: #ffecb3;
+            font-size: 1.2rem;
+        }
+        .move-direction {
+            font-size: 1.4rem;
+            background: #000000aa;
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 40px;
+            margin-top: 10px;
+        }
+        @media (max-width: 480px) {
+            .grid { grid-template-columns: repeat(4, 70px); gap: 8px; }
+            .cell input { width: 55px; height: 55px; font-size: 22px; }
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="grid" id="gameGrid"></div>
-    <div style="text-align:center">
-        <button id="aiMoveBtn">🧠 AI يقرر (MCTS)</button>
-        <button id="resetBtn">🔄 إعادة تعيين</button>
+<div class="main-container">
+    <div class="grid" id="dynamicGrid"></div>
+    <div class="controls">
+        <button id="analyzeBtn">🤖 AI يحلل ويتخذ قرار</button>
+        <button id="resetBtn">🔄 إعادة تعيين (شبكة فارغة)</button>
+        <button id="clearBtn">🗑️ مسح الأرقام</button>
     </div>
-    <div class="ai-status" id="aiStatus">⚡ جاهز | خوارزمية MCTS تحاكي 2000 جولة لكل حركة</div>
+    <div class="ai-panel" id="aiMessage">
+        ✏️ أدخل الأرقام كما تظهر في لعبتك ثم اضغط "AI يحلل"
+    </div>
 </div>
 
 <script>
     const SIZE = 4;
-    let grid = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
-    const SPAWN_VALUES = [1,2,3,4,5];
-    
-    // دالة مساعدة
-    function cloneGrid(g) { return g.map(row=>[...row]); }
-    
-    function hasEmpty(g) {
-        for(let i=0;i<SIZE;i++) for(let j=0;j<SIZE;j++) if(g[i][j]===0) return true;
-        return false;
+    let gridData = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+
+    // المساعدة
+    function cloneGrid(grid) {
+        return grid.map(row => [...row]);
     }
-    
-    function spawnRandomTile(g, forcedVal=null) {
-        let empty=[];
-        for(let i=0;i<SIZE;i++) for(let j=0;j<SIZE;j++) if(g[i][j]===0) empty.push([i,j]);
-        if(empty.length===0) return false;
-        let [x,y]=empty[Math.floor(Math.random()*empty.length)];
-        g[x][y] = forcedVal!==null ? forcedVal : SPAWN_VALUES[Math.floor(Math.random()*SPAWN_VALUES.length)];
-        return true;
-    }
-    
-    function tryMerge(g,x1,y1,x2,y2){
-        if(g[x1][y1]===0||g[x2][y2]===0) return false;
-        if(g[x1][y1]!==g[x2][y2]) return false;
-        if(Math.abs(x1-x2)+Math.abs(y1-y2)!==1) return false;
-        let newVal=g[x1][y1]+1;
-        g[x1][y1]=newVal;
-        g[x2][y2]=0;
-        return true;
-    }
-    
-    function getAllMoves(g){
-        let moves=[];
-        for(let i=0;i<SIZE;i++){
-            for(let j=0;j<SIZE;j++){
-                if(g[i][j]===0) continue;
-                if(j+1<SIZE && g[i][j+1]===g[i][j]) moves.push({from:[i,j],to:[i,j+1],val:g[i][j]});
-                if(i+1<SIZE && g[i+1][j]===g[i][j]) moves.push({from:[i,j],to:[i+1,j],val:g[i][j]});
+
+    function getAllMoves(grid) {
+        let moves = [];
+        for (let i = 0; i < SIZE; i++) {
+            for (let j = 0; j < SIZE; j++) {
+                if (grid[i][j] === 0) continue;
+                if (j + 1 < SIZE && grid[i][j+1] === grid[i][j])
+                    moves.push({ from: [i, j], to: [i, j+1], val: grid[i][j], dir: "➡️ يمين" });
+                if (i + 1 < SIZE && grid[i+1][j] === grid[i][j])
+                    moves.push({ from: [i, j], to: [i+1, j], val: grid[i][j], dir: "⬇️ أسفل" });
             }
         }
-        // إزالة تكرار
-        let unique=[];
-        let set=new Set();
-        for(let m of moves){
-            let k1=`${m.from[0]},${m.from[1]}-${m.to[0]},${m.to[1]}`;
-            if(!set.has(k1)){ set.add(k1); unique.push(m);}
+        // إزالة الازدواجية
+        const unique = [];
+        const set = new Set();
+        for (let m of moves) {
+            const key = `${m.from[0]},${m.from[1]}-${m.to[0]},${m.to[1]}`;
+            if (!set.has(key)) {
+                set.add(key);
+                unique.push(m);
+            }
         }
         return unique;
     }
-    
-    // ========== MCTS (Monte Carlo Tree Search) ==========
+
+    // محاكاة الدمج
+    function tryMergeOnCopy(grid, fromX, fromY, toX, toY) {
+        let g = cloneGrid(grid);
+        if (g[fromX][fromY] === 0 || g[toX][toY] === 0) return null;
+        if (g[fromX][fromY] !== g[toX][toY]) return null;
+        if (Math.abs(fromX - toX) + Math.abs(fromY - toY) !== 1) return null;
+        const newVal = g[fromX][fromY] + 1;
+        g[fromX][fromY] = newVal;
+        g[toX][toY] = 0;
+        return g;
+    }
+
+    // === MCTS ===
     class MCTSNode {
-        constructor(grid, parent=null, move=null){
+        constructor(grid, parent = null, move = null) {
             this.grid = cloneGrid(grid);
             this.parent = parent;
             this.move = move;
@@ -87,151 +171,191 @@
             this.visits = 0;
             this.untriedMoves = getAllMoves(this.grid);
         }
-        
-        isFullyExpanded(){ return this.untriedMoves.length===0; }
-        
-        selectChild(){
-            let best=null;
-            let bestUCB=-Infinity;
-            for(let child of this.children){
-                let ucb = (child.wins / child.visits) + 1.4 * Math.sqrt(Math.log(this.visits)/child.visits);
-                if(ucb>bestUCB){ bestUCB=ucb; best=child;}
+
+        isFullyExpanded() { return this.untriedMoves.length === 0; }
+
+        selectChild() {
+            let best = null;
+            let bestUCB = -Infinity;
+            for (let child of this.children) {
+                let ucb = (child.wins / child.visits) + 1.4 * Math.sqrt(Math.log(this.visits) / child.visits);
+                if (ucb > bestUCB) {
+                    bestUCB = ucb;
+                    best = child;
+                }
             }
             return best;
         }
-        
-        expand(){
-            if(this.untriedMoves.length===0) return null;
+
+        expand() {
+            if (this.untriedMoves.length === 0) return null;
             let move = this.untriedMoves.pop();
-            let newGrid = cloneGrid(this.grid);
-            tryMerge(newGrid, move.from[0],move.from[1], move.to[0],move.to[1]);
-            if(hasEmpty(newGrid)) spawnRandomTile(newGrid);
+            let newGrid = tryMergeOnCopy(this.grid, move.from[0], move.from[1], move.to[0], move.to[1]);
+            if (!newGrid) return null;
+            // محاكاة ظهور الحيوان العشوائي (1-5)
+            let emptyCells = [];
+            for (let i = 0; i < SIZE; i++)
+                for (let j = 0; j < SIZE; j++)
+                    if (newGrid[i][j] === 0) emptyCells.push([i, j]);
+            if (emptyCells.length > 0) {
+                let randPos = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                let randVal = Math.floor(Math.random() * 5) + 1; // 1..5
+                newGrid[randPos[0]][randPos[1]] = randVal;
+            }
             let child = new MCTSNode(newGrid, this, move);
             this.children.push(child);
             return child;
         }
-        
-        simulate(){
+
+        simulate() {
             let simGrid = cloneGrid(this.grid);
-            let steps=0;
-            while(steps<60){
+            let steps = 0;
+            while (steps < 70) {
                 let moves = getAllMoves(simGrid);
-                if(moves.length===0) break;
-                let randMove = moves[Math.floor(Math.random()*moves.length)];
-                tryMerge(simGrid, randMove.from[0],randMove.from[1], randMove.to[0],randMove.to[1]);
-                if(hasEmpty(simGrid)) spawnRandomTile(simGrid);
+                if (moves.length === 0) break;
+                let randMove = moves[Math.floor(Math.random() * moves.length)];
+                let simCopy = tryMergeOnCopy(simGrid, randMove.from[0], randMove.from[1], randMove.to[0], randMove.to[1]);
+                if (!simCopy) break;
+                simGrid = simCopy;
+                // ظهور تيل عشوائي 1-5
+                let empty = [];
+                for (let i = 0; i < SIZE; i++)
+                    for (let j = 0; j < SIZE; j++)
+                        if (simGrid[i][j] === 0) empty.push([i, j]);
+                if (empty.length > 0) {
+                    let pos = empty[Math.floor(Math.random() * empty.length)];
+                    simGrid[pos[0]][pos[1]] = Math.floor(Math.random() * 5) + 1;
+                }
                 steps++;
-                // مكافأة: لو وصلنا لمستوى 11 نكسب
-                let maxV=0;
-                for(let i=0;i<SIZE;i++) for(let j=0;j<SIZE;j++) if(simGrid[i][j]>maxV) maxV=simGrid[i][j];
-                if(maxV>=11) return 1;
+                let maxV = 0;
+                for (let i = 0; i < SIZE; i++)
+                    for (let j = 0; j < SIZE; j++)
+                        if (simGrid[i][j] > maxV) maxV = simGrid[i][j];
+                if (maxV >= 11) return 1;
             }
-            // تقييم نهائي للشبكة بعد المحاكاة
-            let finalScore=0;
-            let maxVal=0;
-            let emptyCount=0;
-            for(let i=0;i<SIZE;i++) for(let j=0;j<SIZE;j++) {
-                let v=simGrid[i][j];
-                if(v>maxVal) maxVal=v;
-                if(v===0) emptyCount++;
-                finalScore+=v*v;
-            }
-            finalScore += emptyCount*150;
-            if(maxVal>=10) finalScore+=10000;
-            if(maxVal>=11) finalScore+=1000000;
-            return finalScore/10000; // تطبيع
+            let finalScore = 0;
+            let maxVal = 0;
+            let emptyCount = 0;
+            for (let i = 0; i < SIZE; i++)
+                for (let j = 0; j < SIZE; j++) {
+                    let v = simGrid[i][j];
+                    if (v > maxVal) maxVal = v;
+                    if (v === 0) emptyCount++;
+                    finalScore += v * v;
+                }
+            finalScore += emptyCount * 200;
+            if (maxVal >= 10) finalScore += 5000;
+            if (maxVal >= 11) finalScore += 1000000;
+            return finalScore / 10000;
         }
-        
-        backpropagate(result){
+
+        backpropagate(result) {
             this.visits++;
-            this.wins+=result;
-            if(this.parent) this.parent.backpropagate(result);
+            this.wins += result;
+            if (this.parent) this.parent.backpropagate(result);
         }
-        
-        bestMove(){
-            let best=null;
-            let bestScore=-Infinity;
-            for(let child of this.children){
-                let score = child.wins/child.visits;
-                if(score>bestScore){
-                    bestScore=score;
-                    best=child;
+
+        bestMoveInfo() {
+            let best = null;
+            let bestScore = -Infinity;
+            for (let child of this.children) {
+                let score = child.wins / child.visits;
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = child;
                 }
             }
             return best ? best.move : null;
         }
     }
-    
-    function MCTS_bestMove(rootGrid, iterations=1800){
-        let root = new MCTSNode(rootGrid);
-        for(let i=0;i<iterations;i++){
+
+    function getBestMoveWithMCTS(grid, iterations = 1600) {
+        let root = new MCTSNode(grid);
+        for (let i = 0; i < iterations; i++) {
             let node = root;
-            // selection
-            while(node.isFullyExpanded() && node.children.length>0){
+            while (node.isFullyExpanded() && node.children.length > 0) {
                 node = node.selectChild();
             }
-            // expansion
-            if(!node.isFullyExpanded()){
+            if (!node.isFullyExpanded()) {
                 let newNode = node.expand();
-                if(newNode) node = newNode;
+                if (newNode) node = newNode;
             }
-            // simulation
             let result = node.simulate();
-            // backpropagation
             node.backpropagate(result);
         }
-        return root.bestMove();
+        return root.bestMoveInfo();
+    }
+
+    // تحديث واجهة المستخدم
+    function renderEditableGrid() {
+        const container = document.getElementById("dynamicGrid");
+        container.innerHTML = "";
+        for (let i = 0; i < SIZE; i++) {
+            for (let j = 0; j < SIZE; j++) {
+                const val = gridData[i][j];
+                const cellDiv = document.createElement("div");
+                cellDiv.className = "cell" + (val === 0 ? " empty-input" : "");
+                const input = document.createElement("input");
+                input.type = "number";
+                input.value = val === 0 ? "" : val;
+                input.placeholder = "0";
+                input.min = 0;
+                input.max = 20;
+                input.addEventListener("change", (function(x, y) {
+                    return function(e) {
+                        let newVal = parseInt(e.target.value);
+                        if (isNaN(newVal)) newVal = 0;
+                        if (newVal < 0) newVal = 0;
+                        gridData[x][y] = newVal;
+                        renderEditableGrid();
+                    };
+                })(i, j));
+                cellDiv.appendChild(input);
+                container.appendChild(cellDiv);
+            }
+        }
+    }
+
+    function resetGrid() {
+        gridData = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+        renderEditableGrid();
+        document.getElementById("aiMessage").innerHTML = "🔄 تم مسح الشبكة. أدخل الأرقام من لعبتك.";
     }
     
-    // تنفيذ حركة AI
-    async function performAIMove(){
-        let moves = getAllMoves(grid);
-        if(moves.length===0){
-            document.getElementById("aiStatus").innerHTML = "💀 لا توجد حركات متاحة، أعد التعيين";
+    function clearAllNumbers() {
+        gridData = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+        renderEditableGrid();
+        document.getElementById("aiMessage").innerHTML = "🗑️ تم مسح جميع الأرقام. الآن أدخل حالتك الحالية.";
+    }
+
+    function analyzeAndRecommend() {
+        const current = cloneGrid(gridData);
+        const moves = getAllMoves(current);
+        if (moves.length === 0) {
+            document.getElementById("aiMessage").innerHTML = "⚠️ لا توجد حركة دمج صالحة! غير الأرقام أو أعد التعيين.";
             return;
         }
-        document.getElementById("aiStatus").innerHTML = "⏳ الذكاء الاصطناعي يفكر (يحاكي 1800 جولة)...";
-        // لتجنب تجميد الواجهة نستخدم setTimeout
-        setTimeout(()=>{
-            let best = MCTS_bestMove(grid, 1800);
-            if(!best){
-                document.getElementById("aiStatus").innerHTML = "⚠️ خطأ في الحركة، حاول مرة أخرى";
+        document.getElementById("aiMessage").innerHTML = "⏳ الذكاء يحلل الاحتمالات العميقة (MCTS) ...";
+        setTimeout(() => {
+            const bestMove = getBestMoveWithMCTS(current, 1400);
+            if (!bestMove) {
+                document.getElementById("aiMessage").innerHTML = "❌ فشل التحليل، حاول مرة أخرى أو حرك أرقاماً مختلفة.";
                 return;
             }
-            tryMerge(grid, best.from[0],best.from[1], best.to[0],best.to[1]);
-            if(hasEmpty(grid)) spawnRandomTile(grid);
-            renderGrid();
-            let maxLvl=0;
-            for(let i=0;i<SIZE;i++) for(let j=0;j<SIZE;j++) if(grid[i][j]>maxLvl) maxLvl=grid[i][j];
-            if(maxLvl>=11) document.getElementById("aiStatus").innerHTML = "🏆 فوز! وصلت للمستوى 11 🏆";
-            else document.getElementById("aiStatus").innerHTML = "✅ تمت الحركة | MCTS يحلل المستقبل بعمق غير محدود";
-        },20);
+            const fromCell = bestMove.from;
+            const toCell = bestMove.to;
+            const direction = (fromCell[0] === toCell[0]) ? (fromCell[1] < toCell[1] ? "يمين ➡️" : "يسار ⬅️") : (fromCell[0] < toCell[0] ? "أسفل ⬇️" : "أعلى ⬆️");
+            const val = bestMove.val;
+            const msg = `🧠 أقترح: ادمج ${val} + ${val} من (${fromCell[1]+1},${fromCell[0]+1}) إلى (${toCell[1]+1},${toCell[0]+1}) الاتجاه: ${direction}`;
+            document.getElementById("aiMessage").innerHTML = msg + `<div class="move-direction">🎯 ${direction}  |  قيمة الدمج → ${val+1}</div>`;
+        }, 30);
     }
+
+    document.getElementById("analyzeBtn").addEventListener("click", analyzeAndRecommend);
+    document.getElementById("resetBtn").addEventListener("click", resetGrid);
+    document.getElementById("clearBtn").addEventListener("click", clearAllNumbers);
     
-    function resetGame(){
-        grid = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
-        for(let i=0;i<6;i++) spawnRandomTile(grid);
-        renderGrid();
-        document.getElementById("aiStatus").innerHTML = "🔄 بداية جديدة | MCTS جاهز";
-    }
-    
-    function renderGrid(){
-        let cont = document.getElementById("gameGrid");
-        cont.innerHTML="";
-        for(let i=0;i<SIZE;i++){
-            for(let j=0;j<SIZE;j++){
-                let val = grid[i][j];
-                let div = document.createElement("div");
-                div.className = "cell"+(val===0 ? " empty":"");
-                div.innerText = val===0 ? "🐾" : val;
-                cont.appendChild(div);
-            }
-        }
-    }
-    
-    document.getElementById("aiMoveBtn").addEventListener("click",performAIMove);
-    document.getElementById("resetBtn").addEventListener("click",resetGame);
-    resetGame();
+    resetGrid();
 </script>
 </body>
 </html>
