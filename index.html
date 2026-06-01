@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>AI متقدم - MCTS للعبة الدمج</title>
+    <style>
+        /* نفس الاستايل السابق مع تعديل بسيط */
+        *{box-sizing:border-box;}
+        body{background:linear-gradient(135deg,#0a2f1f,#051a0e);font-family:'Segoe UI';display:flex;justify-content:center;align-items:center;min-height:100vh;}
+        .container{background:#000000aa;border-radius:40px;padding:20px;}
+        .grid{display:grid;grid-template-columns:repeat(4,85px);gap:12px;background:#b87c3a;padding:15px;border-radius:24px;}
+        .cell{background:#f7e8c8;border-radius:16px;height:85px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:bold;cursor:pointer;}
+        .cell.empty{background:#dbbb8c;color:#8b694a;}
+        button{background:#f5b642;border:none;padding:10px 20px;margin:10px;border-radius:40px;font-weight:bold;cursor:pointer;}
+        .ai-status{background:#1e2a1ac9;margin-top:20px;padding:15px;border-radius:40px;text-align:center;color:#ffeaac;font-size:1.2rem;}
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="grid" id="gameGrid"></div>
+    <div style="text-align:center">
+        <button id="aiMoveBtn">🧠 AI يقرر (MCTS)</button>
+        <button id="resetBtn">🔄 إعادة تعيين</button>
+    </div>
+    <div class="ai-status" id="aiStatus">⚡ جاهز | خوارزمية MCTS تحاكي 2000 جولة لكل حركة</div>
+</div>
+
+<script>
+    const SIZE = 4;
+    let grid = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+    const SPAWN_VALUES = [1,2,3,4,5];
+    
+    // دالة مساعدة
+    function cloneGrid(g) { return g.map(row=>[...row]); }
+    
+    function hasEmpty(g) {
+        for(let i=0;i<SIZE;i++) for(let j=0;j<SIZE;j++) if(g[i][j]===0) return true;
+        return false;
+    }
+    
+    function spawnRandomTile(g, forcedVal=null) {
+        let empty=[];
+        for(let i=0;i<SIZE;i++) for(let j=0;j<SIZE;j++) if(g[i][j]===0) empty.push([i,j]);
+        if(empty.length===0) return false;
+        let [x,y]=empty[Math.floor(Math.random()*empty.length)];
+        g[x][y] = forcedVal!==null ? forcedVal : SPAWN_VALUES[Math.floor(Math.random()*SPAWN_VALUES.length)];
+        return true;
+    }
+    
+    function tryMerge(g,x1,y1,x2,y2){
+        if(g[x1][y1]===0||g[x2][y2]===0) return false;
+        if(g[x1][y1]!==g[x2][y2]) return false;
+        if(Math.abs(x1-x2)+Math.abs(y1-y2)!==1) return false;
+        let newVal=g[x1][y1]+1;
+        g[x1][y1]=newVal;
+        g[x2][y2]=0;
+        return true;
+    }
+    
+    function getAllMoves(g){
+        let moves=[];
+        for(let i=0;i<SIZE;i++){
+            for(let j=0;j<SIZE;j++){
+                if(g[i][j]===0) continue;
+                if(j+1<SIZE && g[i][j+1]===g[i][j]) moves.push({from:[i,j],to:[i,j+1],val:g[i][j]});
+                if(i+1<SIZE && g[i+1][j]===g[i][j]) moves.push({from:[i,j],to:[i+1,j],val:g[i][j]});
+            }
+        }
+        // إزالة تكرار
+        let unique=[];
+        let set=new Set();
+        for(let m of moves){
+            let k1=`${m.from[0]},${m.from[1]}-${m.to[0]},${m.to[1]}`;
+            if(!set.has(k1)){ set.add(k1); unique.push(m);}
+        }
+        return unique;
+    }
+    
+    // ========== MCTS (Monte Carlo Tree Search) ==========
+    class MCTSNode {
+        constructor(grid, parent=null, move=null){
+            this.grid = cloneGrid(grid);
+            this.parent = parent;
+            this.move = move;
+            this.children = [];
+            this.wins = 0;
+            this.visits = 0;
+            this.untriedMoves = getAllMoves(this.grid);
+        }
+        
+        isFullyExpanded(){ return this.untriedMoves.length===0; }
+        
+        selectChild(){
+            let best=null;
+            let bestUCB=-Infinity;
+            for(let child of this.children){
+                let ucb = (child.wins / child.visits) + 1.4 * Math.sqrt(Math.log(this.visits)/child.visits);
+                if(ucb>bestUCB){ bestUCB=ucb; best=child;}
+            }
+            return best;
+        }
+        
+        expand(){
+            if(this.untriedMoves.length===0) return null;
+            let move = this.untriedMoves.pop();
+            let newGrid = cloneGrid(this.grid);
+            tryMerge(newGrid, move.from[0],move.from[1], move.to[0],move.to[1]);
+            if(hasEmpty(newGrid)) spawnRandomTile(newGrid);
+            let child = new MCTSNode(newGrid, this, move);
+            this.children.push(child);
+            return child;
+        }
+        
+        simulate(){
+            let simGrid = cloneGrid(this.grid);
+            let steps=0;
+            while(steps<60){
+                let moves = getAllMoves(simGrid);
+                if(moves.length===0) break;
+                let randMove = moves[Math.floor(Math.random()*moves.length)];
+                tryMerge(simGrid, randMove.from[0],randMove.from[1], randMove.to[0],randMove.to[1]);
+                if(hasEmpty(simGrid)) spawnRandomTile(simGrid);
+                steps++;
+                // مكافأة: لو وصلنا لمستوى 11 نكسب
+                let maxV=0;
+                for(let i=0;i<SIZE;i++) for(let j=0;j<SIZE;j++) if(simGrid[i][j]>maxV) maxV=simGrid[i][j];
+                if(maxV>=11) return 1;
+            }
+            // تقييم نهائي للشبكة بعد المحاكاة
+            let finalScore=0;
+            let maxVal=0;
+            let emptyCount=0;
+            for(let i=0;i<SIZE;i++) for(let j=0;j<SIZE;j++) {
+                let v=simGrid[i][j];
+                if(v>maxVal) maxVal=v;
+                if(v===0) emptyCount++;
+                finalScore+=v*v;
+            }
+            finalScore += emptyCount*150;
+            if(maxVal>=10) finalScore+=10000;
+            if(maxVal>=11) finalScore+=1000000;
+            return finalScore/10000; // تطبيع
+        }
+        
+        backpropagate(result){
+            this.visits++;
+            this.wins+=result;
+            if(this.parent) this.parent.backpropagate(result);
+        }
+        
+        bestMove(){
+            let best=null;
+            let bestScore=-Infinity;
+            for(let child of this.children){
+                let score = child.wins/child.visits;
+                if(score>bestScore){
+                    bestScore=score;
+                    best=child;
+                }
+            }
+            return best ? best.move : null;
+        }
+    }
+    
+    function MCTS_bestMove(rootGrid, iterations=1800){
+        let root = new MCTSNode(rootGrid);
+        for(let i=0;i<iterations;i++){
+            let node = root;
+            // selection
+            while(node.isFullyExpanded() && node.children.length>0){
+                node = node.selectChild();
+            }
+            // expansion
+            if(!node.isFullyExpanded()){
+                let newNode = node.expand();
+                if(newNode) node = newNode;
+            }
+            // simulation
+            let result = node.simulate();
+            // backpropagation
+            node.backpropagate(result);
+        }
+        return root.bestMove();
+    }
+    
+    // تنفيذ حركة AI
+    async function performAIMove(){
+        let moves = getAllMoves(grid);
+        if(moves.length===0){
+            document.getElementById("aiStatus").innerHTML = "💀 لا توجد حركات متاحة، أعد التعيين";
+            return;
+        }
+        document.getElementById("aiStatus").innerHTML = "⏳ الذكاء الاصطناعي يفكر (يحاكي 1800 جولة)...";
+        // لتجنب تجميد الواجهة نستخدم setTimeout
+        setTimeout(()=>{
+            let best = MCTS_bestMove(grid, 1800);
+            if(!best){
+                document.getElementById("aiStatus").innerHTML = "⚠️ خطأ في الحركة، حاول مرة أخرى";
+                return;
+            }
+            tryMerge(grid, best.from[0],best.from[1], best.to[0],best.to[1]);
+            if(hasEmpty(grid)) spawnRandomTile(grid);
+            renderGrid();
+            let maxLvl=0;
+            for(let i=0;i<SIZE;i++) for(let j=0;j<SIZE;j++) if(grid[i][j]>maxLvl) maxLvl=grid[i][j];
+            if(maxLvl>=11) document.getElementById("aiStatus").innerHTML = "🏆 فوز! وصلت للمستوى 11 🏆";
+            else document.getElementById("aiStatus").innerHTML = "✅ تمت الحركة | MCTS يحلل المستقبل بعمق غير محدود";
+        },20);
+    }
+    
+    function resetGame(){
+        grid = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
+        for(let i=0;i<6;i++) spawnRandomTile(grid);
+        renderGrid();
+        document.getElementById("aiStatus").innerHTML = "🔄 بداية جديدة | MCTS جاهز";
+    }
+    
+    function renderGrid(){
+        let cont = document.getElementById("gameGrid");
+        cont.innerHTML="";
+        for(let i=0;i<SIZE;i++){
+            for(let j=0;j<SIZE;j++){
+                let val = grid[i][j];
+                let div = document.createElement("div");
+                div.className = "cell"+(val===0 ? " empty":"");
+                div.innerText = val===0 ? "🐾" : val;
+                cont.appendChild(div);
+            }
+        }
+    }
+    
+    document.getElementById("aiMoveBtn").addEventListener("click",performAIMove);
+    document.getElementById("resetBtn").addEventListener("click",resetGame);
+    resetGame();
+</script>
+</body>
+</html>
