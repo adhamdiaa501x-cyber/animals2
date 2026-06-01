@@ -2,7 +2,7 @@
 <html dir="rtl" lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title>AI الفاتحون - تحليل حركات الدمج</title>
+    <title>AI الفاتحون - يفكر بالرص والدمج</title>
     <style>
         * {
             box-sizing: border-box;
@@ -22,7 +22,7 @@
             border-radius: 48px;
             padding: 25px;
             backdrop-filter: blur(4px);
-            max-width: 550px;
+            max-width: 600px;
             width: 100%;
         }
         h2 {
@@ -90,9 +90,10 @@
             border-radius: 60px;
             margin: 10px 0;
         }
-        .warning {
-            color: #ffaa88;
+        .reason {
             font-size: 0.9rem;
+            color: #ffaa88;
+            margin-top: 10px;
         }
         @media (max-width: 480px) {
             .cell input { font-size: 18px; }
@@ -103,16 +104,16 @@
 </head>
 <body>
 <div class="container">
-    <h2>🧠 مستشار AI - لعبة الفاتحون</h2>
+    <h2>🧠 مستشار AI - الفاتحون (يفكر زيك)</h2>
     <div class="grid" id="gridContainer"></div>
     
     <div class="controls">
-        <button id="analyzeBtn">🔍 تحليل أفضل حركة</button>
+        <button id="analyzeBtn">🔍 حلل وقل لي أفضل حركة</button>
         <button id="resetBtn">🗑️ مسح كل الخانات</button>
     </div>
     
     <div class="result" id="resultPanel">
-        ✏️ أدخل الأرقام كما تظهر في لعبتك، ثم اضغط "تحليل"
+        ✏️ أدخل الأرقام من لعبتك، ثم اضغط "حلل"
     </div>
 </div>
 
@@ -120,7 +121,6 @@
     const SIZE = 4;
     let gridData = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
     
-    // عرض شبكة الإدخال
     function renderInputGrid() {
         const container = document.getElementById("gridContainer");
         container.innerHTML = "";
@@ -145,39 +145,43 @@
         }
     }
     
-    // محاكاة الحركة في اتجاه معين (زي لعبة 2048)
+    // محاكاة حركة السحب (زي 2048)
     function simulateMove(grid, direction) {
         let newGrid = grid.map(row => [...row]);
-        let changed = false;
+        let changes = { merged: false, moved: false };
         
         if (direction === 'left') {
             for (let i = 0; i < SIZE; i++) {
                 let row = newGrid[i].filter(v => v !== 0);
+                let originalLength = row.length;
                 for (let j = 0; j < row.length - 1; j++) {
                     if (row[j] === row[j+1]) {
                         row[j] = row[j] + 1;
                         row.splice(j+1, 1);
-                        changed = true;
+                        changes.merged = true;
                     }
                 }
                 while (row.length < SIZE) row.push(0);
-                if (JSON.stringify(newGrid[i]) !== JSON.stringify(row)) changed = true;
+                if (originalLength !== row.filter(v => v !== 0).length) changes.moved = true;
+                if (JSON.stringify(newGrid[i]) !== JSON.stringify(row)) changes.moved = true;
                 newGrid[i] = row;
             }
         }
         else if (direction === 'right') {
             for (let i = 0; i < SIZE; i++) {
                 let row = newGrid[i].filter(v => v !== 0);
+                let originalLength = row.length;
                 for (let j = row.length - 1; j > 0; j--) {
                     if (row[j] === row[j-1]) {
                         row[j] = row[j] + 1;
                         row.splice(j-1, 1);
                         j--;
-                        changed = true;
+                        changes.merged = true;
                     }
                 }
                 while (row.length < SIZE) row.unshift(0);
-                if (JSON.stringify(newGrid[i]) !== JSON.stringify(row)) changed = true;
+                if (originalLength !== row.filter(v => v !== 0).length) changes.moved = true;
+                if (JSON.stringify(newGrid[i]) !== JSON.stringify(row)) changes.moved = true;
                 newGrid[i] = row;
             }
         }
@@ -185,16 +189,18 @@
             for (let j = 0; j < SIZE; j++) {
                 let col = [];
                 for (let i = 0; i < SIZE; i++) if (newGrid[i][j] !== 0) col.push(newGrid[i][j]);
+                let originalLength = col.length;
                 for (let k = 0; k < col.length - 1; k++) {
                     if (col[k] === col[k+1]) {
                         col[k] = col[k] + 1;
                         col.splice(k+1, 1);
-                        changed = true;
+                        changes.merged = true;
                     }
                 }
                 while (col.length < SIZE) col.push(0);
+                if (originalLength !== col.filter(v => v !== 0).length) changes.moved = true;
                 for (let i = 0; i < SIZE; i++) {
-                    if (newGrid[i][j] !== col[i]) changed = true;
+                    if (newGrid[i][j] !== col[i]) changes.moved = true;
                     newGrid[i][j] = col[i];
                 }
             }
@@ -203,50 +209,60 @@
             for (let j = 0; j < SIZE; j++) {
                 let col = [];
                 for (let i = 0; i < SIZE; i++) if (newGrid[i][j] !== 0) col.push(newGrid[i][j]);
+                let originalLength = col.length;
                 for (let k = col.length - 1; k > 0; k--) {
                     if (col[k] === col[k-1]) {
                         col[k] = col[k] + 1;
                         col.splice(k-1, 1);
                         k--;
-                        changed = true;
+                        changes.merged = true;
                     }
                 }
                 while (col.length < SIZE) col.unshift(0);
+                if (originalLength !== col.filter(v => v !== 0).length) changes.moved = true;
                 for (let i = 0; i < SIZE; i++) {
-                    if (newGrid[i][j] !== col[i]) changed = true;
+                    if (newGrid[i][j] !== col[i]) changes.moved = true;
                     newGrid[i][j] = col[i];
                 }
             }
         }
-        return { newGrid, changed };
+        return { newGrid, changes };
     }
     
-    // تقييم جودة الشبكة (كلما زاد الرقم وزادت الفراغات كلما كان أفضل)
+    // تقييم جودة الشبكة
     function evaluateGrid(grid) {
         let maxVal = 0;
         let emptyCount = 0;
         let score = 0;
+        let mergePotential = 0;
+        
         for (let i = 0; i < SIZE; i++) {
             for (let j = 0; j < SIZE; j++) {
                 let v = grid[i][j];
                 if (v > maxVal) maxVal = v;
                 if (v === 0) emptyCount++;
                 score += v * v;
-                // مكافأة الأرقام الكبيرة في الزوايا
-                if ((i === 0 || i === SIZE-1) && (j === 0 || j === SIZE-1) && v >= 5) {
-                    score += v * 50;
+                
+                // فحص احتمالات الدمج المستقبلية
+                if (v > 0) {
+                    if (j+1 < SIZE && grid[i][j+1] === v) mergePotential += v * 10;
+                    if (i+1 < SIZE && grid[i+1][j] === v) mergePotential += v * 10;
                 }
             }
         }
+        
         if (maxVal >= 11) score += 1000000;
         else if (maxVal >= 10) score += 50000;
         else if (maxVal >= 9) score += 5000;
-        score += emptyCount * 200;
+        
+        score += emptyCount * 300;
+        score += mergePotential;
+        
         return score;
     }
     
-    // إيجاد أفضل حركة
-    function getBestMove() {
+    // الحصول على أفضل حركة (تفكر في الرص والدمج)
+    function getBestMoveWithReason() {
         const directions = ['up', 'down', 'left', 'right'];
         const dirNames = {
             'up': '⬆️ أعلى',
@@ -254,56 +270,69 @@
             'left': '⬅️ يسار',
             'right': '➡️ يمين'
         };
+        const dirArrows = {
+            'up': '↑',
+            'down': '↓',
+            'left': '←',
+            'right': '→'
+        };
         
         let bestDir = null;
         let bestScore = -Infinity;
+        let bestReason = "";
         
         for (let dir of directions) {
-            let { newGrid, changed } = simulateMove(gridData, dir);
-            if (!changed) continue;
+            let { newGrid, changes } = simulateMove(gridData, dir);
+            
+            if (!changes.moved && !changes.merged) continue;
+            
             let score = evaluateGrid(newGrid);
+            
+            let reason = "";
+            if (changes.merged) {
+                reason = "🔥 ستحصل على دمج مباشر";
+            } else if (changes.moved) {
+                reason = "🔄 سترص الأرقام لتهيئة دمج قادم";
+            }
+            
+            // مكافأة إضافية للحركات التي ترص الأرقام حتى لو ما دمجتش
+            if (!changes.merged && changes.moved) {
+                score += 200;
+            }
+            
             if (score > bestScore) {
                 bestScore = score;
                 bestDir = dir;
+                bestReason = reason;
             }
         }
         
-        return bestDir ? dirNames[bestDir] : null;
+        return { bestDir: bestDir ? dirNames[bestDir] : null, reason: bestReason, arrow: bestDir ? dirArrows[bestDir] : null };
     }
     
     function analyze() {
-        // التأكد من وجود أرقام للدمج
-        let hasValidMove = false;
-        const dirs = ['up', 'down', 'left', 'right'];
-        for (let dir of dirs) {
-            let { changed } = simulateMove(gridData, dir);
-            if (changed) {
-                hasValidMove = true;
-                break;
-            }
-        }
+        let { bestDir, reason, arrow } = getBestMoveWithReason();
         
-        if (!hasValidMove) {
+        if (!bestDir) {
             document.getElementById("resultPanel").innerHTML = `
-                ⚠️ لا توجد حركة دمج صالحة!<br>
-                <span class="warning">تأكد من وجود رقمين متساويين في صف أو عمود واحد</span>
+                ⚠️ لا توجد حركة ممكنة حالياً<br>
+                <span class="reason">👉 جرب إعادة تعيين أو تحقق من الأرقام</span>
             `;
             return;
         }
         
-        let bestMove = getBestMove();
-        if (bestMove) {
-            document.getElementById("resultPanel").innerHTML = `
-                🧠 أفضل حركة هي:<br>
-                <div class="direction">${bestMove}</div>
-                <div class="warning">👉 بعد تنفيذ الحركة في لعبتك، ادخل الأرقام الجديدة ثم حلل مرة أخرى</div>
-            `;
-        } else {
-            document.getElementById("resultPanel").innerHTML = `
-                ⚠️ لا توجد حركة متاحة حالياً<br>
-                <span class="warning">جرب إعادة تعيين أو تحقق من الأرقام</span>
-            `;
+        let message = `
+            🧠 أفضل حركة هي:<br>
+            <div class="direction">${bestDir} ${arrow}</div>
+        `;
+        
+        if (reason) {
+            message += `<div class="reason">📌 ${reason}</div>`;
         }
+        
+        message += `<div class="reason" style="margin-top: 15px;">✨ بعد الحركة، اكتب الأرقام الجديدة في لعبتك ثم حلل مرة أخرى</div>`;
+        
+        document.getElementById("resultPanel").innerHTML = message;
     }
     
     function resetGrid() {
