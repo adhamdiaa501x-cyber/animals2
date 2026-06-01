@@ -2,7 +2,7 @@
 <html dir="rtl" lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title>AI المتقدم - الفاتحون | تحكم يدوي وتحليل عميق</title>
+    <title>AI الفاتحون - إدخال يدوي وتحليل عميق</title>
     <style>
         * {
             box-sizing: border-box;
@@ -88,13 +88,20 @@
             color: #ffecb3;
             font-size: 1.2rem;
         }
-        .move-direction {
-            font-size: 1.4rem;
+        .arrow-box {
+            font-size: 3rem;
             background: #000000aa;
             display: inline-block;
-            padding: 8px 20px;
-            border-radius: 40px;
-            margin-top: 10px;
+            padding: 15px 30px;
+            border-radius: 60px;
+            margin-top: 15px;
+            font-weight: bold;
+            letter-spacing: 10px;
+        }
+        .move-detail {
+            font-size: 1.1rem;
+            margin-top: 8px;
+            color: #ffd966;
         }
         @media (max-width: 480px) {
             .grid { grid-template-columns: repeat(4, 70px); gap: 8px; }
@@ -107,11 +114,10 @@
     <div class="grid" id="dynamicGrid"></div>
     <div class="controls">
         <button id="analyzeBtn">🤖 AI يحلل ويتخذ قرار</button>
-        <button id="resetBtn">🔄 إعادة تعيين (شبكة فارغة)</button>
-        <button id="clearBtn">🗑️ مسح الأرقام</button>
+        <button id="resetBtn">🔄 إعادة تعيين (تفريغ الخانات)</button>
     </div>
     <div class="ai-panel" id="aiMessage">
-        ✏️ أدخل الأرقام كما تظهر في لعبتك ثم اضغط "AI يحلل"
+        ✏️ اكتب الأرقام كما تظهر في لعبتك ثم اضغط "AI يحلل"
     </div>
 </div>
 
@@ -119,7 +125,6 @@
     const SIZE = 4;
     let gridData = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
 
-    // المساعدة
     function cloneGrid(grid) {
         return grid.map(row => [...row]);
     }
@@ -130,12 +135,11 @@
             for (let j = 0; j < SIZE; j++) {
                 if (grid[i][j] === 0) continue;
                 if (j + 1 < SIZE && grid[i][j+1] === grid[i][j])
-                    moves.push({ from: [i, j], to: [i, j+1], val: grid[i][j], dir: "➡️ يمين" });
+                    moves.push({ from: [i, j], to: [i, j+1], val: grid[i][j], dir: "➡️" });
                 if (i + 1 < SIZE && grid[i+1][j] === grid[i][j])
-                    moves.push({ from: [i, j], to: [i+1, j], val: grid[i][j], dir: "⬇️ أسفل" });
+                    moves.push({ from: [i, j], to: [i+1, j], val: grid[i][j], dir: "⬇️" });
             }
         }
-        // إزالة الازدواجية
         const unique = [];
         const set = new Set();
         for (let m of moves) {
@@ -148,7 +152,6 @@
         return unique;
     }
 
-    // محاكاة الدمج
     function tryMergeOnCopy(grid, fromX, fromY, toX, toY) {
         let g = cloneGrid(grid);
         if (g[fromX][fromY] === 0 || g[toX][toY] === 0) return null;
@@ -160,7 +163,7 @@
         return g;
     }
 
-    // === MCTS ===
+    // MCTS
     class MCTSNode {
         constructor(grid, parent = null, move = null) {
             this.grid = cloneGrid(grid);
@@ -192,14 +195,13 @@
             let move = this.untriedMoves.pop();
             let newGrid = tryMergeOnCopy(this.grid, move.from[0], move.from[1], move.to[0], move.to[1]);
             if (!newGrid) return null;
-            // محاكاة ظهور الحيوان العشوائي (1-5)
             let emptyCells = [];
             for (let i = 0; i < SIZE; i++)
                 for (let j = 0; j < SIZE; j++)
                     if (newGrid[i][j] === 0) emptyCells.push([i, j]);
             if (emptyCells.length > 0) {
                 let randPos = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-                let randVal = Math.floor(Math.random() * 5) + 1; // 1..5
+                let randVal = Math.floor(Math.random() * 5) + 1;
                 newGrid[randPos[0]][randPos[1]] = randVal;
             }
             let child = new MCTSNode(newGrid, this, move);
@@ -217,7 +219,6 @@
                 let simCopy = tryMergeOnCopy(simGrid, randMove.from[0], randMove.from[1], randMove.to[0], randMove.to[1]);
                 if (!simCopy) break;
                 simGrid = simCopy;
-                // ظهور تيل عشوائي 1-5
                 let empty = [];
                 for (let i = 0; i < SIZE; i++)
                     for (let j = 0; j < SIZE; j++)
@@ -269,7 +270,7 @@
         }
     }
 
-    function getBestMoveWithMCTS(grid, iterations = 1600) {
+    function getBestMoveWithMCTS(grid, iterations = 1400) {
         let root = new MCTSNode(grid);
         for (let i = 0; i < iterations; i++) {
             let node = root;
@@ -286,7 +287,6 @@
         return root.bestMoveInfo();
     }
 
-    // تحديث واجهة المستخدم
     function renderEditableGrid() {
         const container = document.getElementById("dynamicGrid");
         container.innerHTML = "";
@@ -298,7 +298,7 @@
                 const input = document.createElement("input");
                 input.type = "number";
                 input.value = val === 0 ? "" : val;
-                input.placeholder = "0";
+                input.placeholder = "";
                 input.min = 0;
                 input.max = 20;
                 input.addEventListener("change", (function(x, y) {
@@ -319,13 +319,7 @@
     function resetGrid() {
         gridData = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
         renderEditableGrid();
-        document.getElementById("aiMessage").innerHTML = "🔄 تم مسح الشبكة. أدخل الأرقام من لعبتك.";
-    }
-    
-    function clearAllNumbers() {
-        gridData = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
-        renderEditableGrid();
-        document.getElementById("aiMessage").innerHTML = "🗑️ تم مسح جميع الأرقام. الآن أدخل حالتك الحالية.";
+        document.getElementById("aiMessage").innerHTML = "🔄 تم مسح الخانات. أدخل أرقامك الآن.";
     }
 
     function analyzeAndRecommend() {
@@ -339,21 +333,25 @@
         setTimeout(() => {
             const bestMove = getBestMoveWithMCTS(current, 1400);
             if (!bestMove) {
-                document.getElementById("aiMessage").innerHTML = "❌ فشل التحليل، حاول مرة أخرى أو حرك أرقاماً مختلفة.";
+                document.getElementById("aiMessage").innerHTML = "❌ فشل التحليل، حاول مرة أخرى.";
                 return;
             }
             const fromCell = bestMove.from;
             const toCell = bestMove.to;
-            const direction = (fromCell[0] === toCell[0]) ? (fromCell[1] < toCell[1] ? "يمين ➡️" : "يسار ⬅️") : (fromCell[0] < toCell[0] ? "أسفل ⬇️" : "أعلى ⬆️");
+            let arrow = "";
+            if (fromCell[0] === toCell[0]) {
+                arrow = fromCell[1] < toCell[1] ? "➡️ يمين" : "⬅️ يسار";
+            } else {
+                arrow = fromCell[0] < toCell[0] ? "⬇️ أسفل" : "⬆️ أعلى";
+            }
             const val = bestMove.val;
-            const msg = `🧠 أقترح: ادمج ${val} + ${val} من (${fromCell[1]+1},${fromCell[0]+1}) إلى (${toCell[1]+1},${toCell[0]+1}) الاتجاه: ${direction}`;
-            document.getElementById("aiMessage").innerHTML = msg + `<div class="move-direction">🎯 ${direction}  |  قيمة الدمج → ${val+1}</div>`;
+            const msg = `🧠 أقترح: ادمج ${val} + ${val}<br> من (صف ${fromCell[0]+1}، عمود ${fromCell[1]+1}) إلى (صف ${toCell[0]+1}، عمود ${toCell[1]+1})`;
+            document.getElementById("aiMessage").innerHTML = msg + `<div class="arrow-box">${arrow}</div><div class="move-detail">النتيجة بعد الدمج → ${val+1}</div>`;
         }, 30);
     }
 
     document.getElementById("analyzeBtn").addEventListener("click", analyzeAndRecommend);
     document.getElementById("resetBtn").addEventListener("click", resetGrid);
-    document.getElementById("clearBtn").addEventListener("click", clearAllNumbers);
     
     resetGrid();
 </script>
