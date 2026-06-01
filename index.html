@@ -2,10 +2,11 @@
 <html dir="rtl" lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title>AI الفاتحون - يفكر بالرص والدمج</title>
+    <title>AI الفاتحون - ينفذ حركتك بذكاء</title>
     <style>
         * {
             box-sizing: border-box;
+            user-select: none;
         }
         body {
             background: linear-gradient(135deg, #0a2f1f, #051a0e);
@@ -18,17 +19,18 @@
             padding: 20px;
         }
         .container {
-            background: #000000aa;
-            border-radius: 48px;
+            background: #000000bb;
+            border-radius: 60px;
             padding: 25px;
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(5px);
             max-width: 600px;
             width: 100%;
         }
-        h2 {
+        h1 {
             text-align: center;
             color: #ffd966;
-            margin-top: 0;
+            margin: 0 0 15px 0;
+            font-size: 1.5rem;
         }
         .grid {
             display: grid;
@@ -36,28 +38,46 @@
             gap: 12px;
             background: #b87c3a;
             padding: 20px;
-            border-radius: 28px;
+            border-radius: 32px;
             margin-bottom: 20px;
         }
-        .cell input {
-            width: 100%;
+        .cell {
+            background: #f7e8c8;
+            border-radius: 18px;
             aspect-ratio: 1 / 1;
-            text-align: center;
-            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
             font-weight: bold;
             font-family: monospace;
-            background: #f7e8c8;
-            border: none;
-            border-radius: 16px;
             color: #3b2a1f;
-            outline: none;
+            box-shadow: inset 0 0 0 2px #fff3cf, 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .cell.empty {
+            background: #ecdbb8;
+            color: #b5976b;
+        }
+        .direction-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        .dir-btn {
+            background: #2c5a2e;
+            box-shadow: 0 4px 0 #1a3a1a;
+            font-size: 24px;
+            padding: 12px 20px;
+            color: white;
         }
         .controls {
             display: flex;
             gap: 15px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-bottom: 15px;
+            margin: 15px 0;
         }
         button {
             background: #f5b642;
@@ -73,115 +93,104 @@
         button:active {
             transform: translateY(2px);
         }
-        .result {
-            background: #1e2a1ac9;
-            border-radius: 40px;
-            padding: 20px;
+        .ai-status {
+            background: #1e2a1acc;
+            border-radius: 50px;
+            padding: 15px;
             text-align: center;
             color: #ffecb3;
+            font-size: 1rem;
             margin-top: 15px;
         }
-        .direction {
-            font-size: 3rem;
+        .suggestion {
+            font-size: 1.3rem;
             font-weight: bold;
             background: #000000aa;
             display: inline-block;
-            padding: 10px 30px;
-            border-radius: 60px;
-            margin: 10px 0;
-        }
-        .reason {
-            font-size: 0.9rem;
-            color: #ffaa88;
-            margin-top: 10px;
+            padding: 8px 25px;
+            border-radius: 50px;
+            margin-top: 8px;
         }
         @media (max-width: 480px) {
-            .cell input { font-size: 18px; }
+            .cell { font-size: 20px; }
+            .dir-btn { font-size: 18px; padding: 8px 12px; }
             button { padding: 8px 16px; font-size: 14px; }
-            .direction { font-size: 2rem; }
         }
     </style>
 </head>
 <body>
 <div class="container">
-    <h2>🧠 مستشار AI - الفاتحون (يفكر زيك)</h2>
-    <div class="grid" id="gridContainer"></div>
+    <h1>🧠 AI الفاتحون - المستشار الذكي</h1>
+    <div class="grid" id="gameGrid"></div>
     
-    <div class="controls">
-        <button id="analyzeBtn">🔍 حلل وقل لي أفضل حركة</button>
-        <button id="resetBtn">🗑️ مسح كل الخانات</button>
+    <div class="direction-buttons">
+        <button class="dir-btn" id="moveUp">⬆️ أعلى</button>
+        <button class="dir-btn" id="moveDown">⬇️ أسفل</button>
+        <button class="dir-btn" id="moveLeft">⬅️ يسار</button>
+        <button class="dir-btn" id="moveRight">➡️ يمين</button>
     </div>
     
-    <div class="result" id="resultPanel">
-        ✏️ أدخل الأرقام من لعبتك، ثم اضغط "حلل"
+    <div class="controls">
+        <button id="aiSuggestBtn">🤖 اطلب نصيحة AI</button>
+        <button id="resetBtn">🔄 مسح كل الخانات</button>
+    </div>
+    
+    <div class="ai-status" id="aiStatus">
+        📌 اضغط على أي سهم لتنفيذ الحركة مباشرة
     </div>
 </div>
 
 <script>
     const SIZE = 4;
-    let gridData = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+    let grid = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
     
-    function renderInputGrid() {
-        const container = document.getElementById("gridContainer");
+    function renderGrid() {
+        const container = document.getElementById("gameGrid");
         container.innerHTML = "";
         for (let i = 0; i < SIZE; i++) {
             for (let j = 0; j < SIZE; j++) {
+                const val = grid[i][j];
                 const cell = document.createElement("div");
-                cell.className = "cell";
-                const input = document.createElement("input");
-                input.type = "number";
-                input.value = gridData[i][j] === 0 ? "" : gridData[i][j];
-                input.placeholder = "0";
-                input.min = 0;
-                input.max = 20;
-                input.addEventListener("change", ((x, y) => (e) => {
-                    let val = parseInt(e.target.value);
-                    if (isNaN(val)) val = 0;
-                    gridData[x][y] = val;
-                })(i, j));
-                cell.appendChild(input);
+                cell.className = "cell" + (val === 0 ? " empty" : "");
+                cell.innerText = val === 0 ? "" : val;
                 container.appendChild(cell);
             }
         }
     }
     
-    // محاكاة حركة السحب (زي 2048)
-    function simulateMove(grid, direction) {
+    // تنفيذ حركة السحب (زي 2048)
+    function executeMove(direction) {
         let newGrid = grid.map(row => [...row]);
-        let changes = { merged: false, moved: false };
+        let changed = false;
         
         if (direction === 'left') {
             for (let i = 0; i < SIZE; i++) {
                 let row = newGrid[i].filter(v => v !== 0);
-                let originalLength = row.length;
                 for (let j = 0; j < row.length - 1; j++) {
                     if (row[j] === row[j+1]) {
                         row[j] = row[j] + 1;
                         row.splice(j+1, 1);
-                        changes.merged = true;
+                        changed = true;
                     }
                 }
                 while (row.length < SIZE) row.push(0);
-                if (originalLength !== row.filter(v => v !== 0).length) changes.moved = true;
-                if (JSON.stringify(newGrid[i]) !== JSON.stringify(row)) changes.moved = true;
+                if (JSON.stringify(newGrid[i]) !== JSON.stringify(row)) changed = true;
                 newGrid[i] = row;
             }
         }
         else if (direction === 'right') {
             for (let i = 0; i < SIZE; i++) {
                 let row = newGrid[i].filter(v => v !== 0);
-                let originalLength = row.length;
                 for (let j = row.length - 1; j > 0; j--) {
                     if (row[j] === row[j-1]) {
                         row[j] = row[j] + 1;
                         row.splice(j-1, 1);
                         j--;
-                        changes.merged = true;
+                        changed = true;
                     }
                 }
                 while (row.length < SIZE) row.unshift(0);
-                if (originalLength !== row.filter(v => v !== 0).length) changes.moved = true;
-                if (JSON.stringify(newGrid[i]) !== JSON.stringify(row)) changes.moved = true;
+                if (JSON.stringify(newGrid[i]) !== JSON.stringify(row)) changed = true;
                 newGrid[i] = row;
             }
         }
@@ -189,18 +198,16 @@
             for (let j = 0; j < SIZE; j++) {
                 let col = [];
                 for (let i = 0; i < SIZE; i++) if (newGrid[i][j] !== 0) col.push(newGrid[i][j]);
-                let originalLength = col.length;
                 for (let k = 0; k < col.length - 1; k++) {
                     if (col[k] === col[k+1]) {
                         col[k] = col[k] + 1;
                         col.splice(k+1, 1);
-                        changes.merged = true;
+                        changed = true;
                     }
                 }
                 while (col.length < SIZE) col.push(0);
-                if (originalLength !== col.filter(v => v !== 0).length) changes.moved = true;
                 for (let i = 0; i < SIZE; i++) {
-                    if (newGrid[i][j] !== col[i]) changes.moved = true;
+                    if (newGrid[i][j] !== col[i]) changed = true;
                     newGrid[i][j] = col[i];
                 }
             }
@@ -209,24 +216,28 @@
             for (let j = 0; j < SIZE; j++) {
                 let col = [];
                 for (let i = 0; i < SIZE; i++) if (newGrid[i][j] !== 0) col.push(newGrid[i][j]);
-                let originalLength = col.length;
                 for (let k = col.length - 1; k > 0; k--) {
                     if (col[k] === col[k-1]) {
                         col[k] = col[k] + 1;
                         col.splice(k-1, 1);
                         k--;
-                        changes.merged = true;
+                        changed = true;
                     }
                 }
                 while (col.length < SIZE) col.unshift(0);
-                if (originalLength !== col.filter(v => v !== 0).length) changes.moved = true;
                 for (let i = 0; i < SIZE; i++) {
-                    if (newGrid[i][j] !== col[i]) changes.moved = true;
+                    if (newGrid[i][j] !== col[i]) changed = true;
                     newGrid[i][j] = col[i];
                 }
             }
         }
-        return { newGrid, changes };
+        
+        if (changed) {
+            grid = newGrid;
+            renderGrid();
+            return true;
+        }
+        return false;
     }
     
     // تقييم جودة الشبكة
@@ -234,117 +245,181 @@
         let maxVal = 0;
         let emptyCount = 0;
         let score = 0;
-        let mergePotential = 0;
-        
         for (let i = 0; i < SIZE; i++) {
             for (let j = 0; j < SIZE; j++) {
                 let v = grid[i][j];
                 if (v > maxVal) maxVal = v;
                 if (v === 0) emptyCount++;
                 score += v * v;
-                
-                // فحص احتمالات الدمج المستقبلية
-                if (v > 0) {
-                    if (j+1 < SIZE && grid[i][j+1] === v) mergePotential += v * 10;
-                    if (i+1 < SIZE && grid[i+1][j] === v) mergePotential += v * 10;
+                if ((i === 0 || i === SIZE-1) && (j === 0 || j === SIZE-1) && v >= 5) {
+                    score += v * 50;
                 }
             }
         }
-        
         if (maxVal >= 11) score += 1000000;
         else if (maxVal >= 10) score += 50000;
-        else if (maxVal >= 9) score += 5000;
-        
         score += emptyCount * 300;
-        score += mergePotential;
-        
         return score;
     }
     
-    // الحصول على أفضل حركة (تفكر في الرص والدمج)
-    function getBestMoveWithReason() {
+    // إيجاد أفضل حركة
+    function getBestMove() {
         const directions = ['up', 'down', 'left', 'right'];
-        const dirNames = {
-            'up': '⬆️ أعلى',
-            'down': '⬇️ أسفل',
-            'left': '⬅️ يسار',
-            'right': '➡️ يمين'
-        };
-        const dirArrows = {
-            'up': '↑',
-            'down': '↓',
-            'left': '←',
-            'right': '→'
-        };
-        
+        const dirNames = {'up': '⬆️ أعلى', 'down': '⬇️ أسفل', 'left': '⬅️ يسار', 'right': '➡️ يمين'};
         let bestDir = null;
         let bestScore = -Infinity;
-        let bestReason = "";
         
         for (let dir of directions) {
-            let { newGrid, changes } = simulateMove(gridData, dir);
-            
-            if (!changes.moved && !changes.merged) continue;
-            
-            let score = evaluateGrid(newGrid);
-            
-            let reason = "";
-            if (changes.merged) {
-                reason = "🔥 ستحصل على دمج مباشر";
-            } else if (changes.moved) {
-                reason = "🔄 سترص الأرقام لتهيئة دمج قادم";
-            }
-            
-            // مكافأة إضافية للحركات التي ترص الأرقام حتى لو ما دمجتش
-            if (!changes.merged && changes.moved) {
-                score += 200;
-            }
-            
-            if (score > bestScore) {
-                bestScore = score;
-                bestDir = dir;
-                bestReason = reason;
+            let testGrid = grid.map(row => [...row]);
+            let newGrid = simulateMoveOnCopy(testGrid, dir);
+            if (newGrid) {
+                let score = evaluateGrid(newGrid);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestDir = dir;
+                }
             }
         }
-        
-        return { bestDir: bestDir ? dirNames[bestDir] : null, reason: bestReason, arrow: bestDir ? dirArrows[bestDir] : null };
+        return bestDir ? dirNames[bestDir] : null;
     }
     
-    function analyze() {
-        let { bestDir, reason, arrow } = getBestMoveWithReason();
+    function simulateMoveOnCopy(gridCopy, direction) {
+        let newGrid = gridCopy.map(row => [...row]);
+        let changed = false;
         
-        if (!bestDir) {
-            document.getElementById("resultPanel").innerHTML = `
-                ⚠️ لا توجد حركة ممكنة حالياً<br>
-                <span class="reason">👉 جرب إعادة تعيين أو تحقق من الأرقام</span>
-            `;
-            return;
+        if (direction === 'left') {
+            for (let i = 0; i < SIZE; i++) {
+                let row = newGrid[i].filter(v => v !== 0);
+                for (let j = 0; j < row.length - 1; j++) {
+                    if (row[j] === row[j+1]) {
+                        row[j] = row[j] + 1;
+                        row.splice(j+1, 1);
+                        changed = true;
+                    }
+                }
+                while (row.length < SIZE) row.push(0);
+                if (JSON.stringify(newGrid[i]) !== JSON.stringify(row)) changed = true;
+                newGrid[i] = row;
+            }
         }
-        
-        let message = `
-            🧠 أفضل حركة هي:<br>
-            <div class="direction">${bestDir} ${arrow}</div>
-        `;
-        
-        if (reason) {
-            message += `<div class="reason">📌 ${reason}</div>`;
+        else if (direction === 'right') {
+            for (let i = 0; i < SIZE; i++) {
+                let row = newGrid[i].filter(v => v !== 0);
+                for (let j = row.length - 1; j > 0; j--) {
+                    if (row[j] === row[j-1]) {
+                        row[j] = row[j] + 1;
+                        row.splice(j-1, 1);
+                        j--;
+                        changed = true;
+                    }
+                }
+                while (row.length < SIZE) row.unshift(0);
+                if (JSON.stringify(newGrid[i]) !== JSON.stringify(row)) changed = true;
+                newGrid[i] = row;
+            }
         }
-        
-        message += `<div class="reason" style="margin-top: 15px;">✨ بعد الحركة، اكتب الأرقام الجديدة في لعبتك ثم حلل مرة أخرى</div>`;
-        
-        document.getElementById("resultPanel").innerHTML = message;
+        else if (direction === 'up') {
+            for (let j = 0; j < SIZE; j++) {
+                let col = [];
+                for (let i = 0; i < SIZE; i++) if (newGrid[i][j] !== 0) col.push(newGrid[i][j]);
+                for (let k = 0; k < col.length - 1; k++) {
+                    if (col[k] === col[k+1]) {
+                        col[k] = col[k] + 1;
+                        col.splice(k+1, 1);
+                        changed = true;
+                    }
+                }
+                while (col.length < SIZE) col.push(0);
+                for (let i = 0; i < SIZE; i++) {
+                    if (newGrid[i][j] !== col[i]) changed = true;
+                    newGrid[i][j] = col[i];
+                }
+            }
+        }
+        else if (direction === 'down') {
+            for (let j = 0; j < SIZE; j++) {
+                let col = [];
+                for (let i = 0; i < SIZE; i++) if (newGrid[i][j] !== 0) col.push(newGrid[i][j]);
+                for (let k = col.length - 1; k > 0; k--) {
+                    if (col[k] === col[k-1]) {
+                        col[k] = col[k] + 1;
+                        col.splice(k-1, 1);
+                        k--;
+                        changed = true;
+                    }
+                }
+                while (col.length < SIZE) col.unshift(0);
+                for (let i = 0; i < SIZE; i++) {
+                    if (newGrid[i][j] !== col[i]) changed = true;
+                    newGrid[i][j] = col[i];
+                }
+            }
+        }
+        return changed ? newGrid : null;
+    }
+    
+    function aiSuggest() {
+        let best = getBestMove();
+        if (best) {
+            document.getElementById("aiStatus").innerHTML = `🧠 AI ينصح بـ: <span class="suggestion">${best}</span><br>✏️ اضغط على السهم المنفذ`;
+        } else {
+            document.getElementById("aiStatus").innerHTML = "⚠️ لا توجد حركة صالحة حالياً، اضغط مسح الخانات واكتب أرقاماً جديدة";
+        }
     }
     
     function resetGrid() {
-        gridData = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
-        renderInputGrid();
-        document.getElementById("resultPanel").innerHTML = "🗑️ تم مسح الخانات. أدخل أرقامك الجديدة.";
+        grid = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+        renderGrid();
+        document.getElementById("aiStatus").innerHTML = "🗑️ تم مسح الخانات. أدخل أرقامك الجديدة يدوياً بالضغط على الخانات";
     }
     
-    document.getElementById("analyzeBtn").addEventListener("click", analyze);
+    function makeMoveAndUpdate(direction, dirName) {
+        let changed = executeMove(direction);
+        if (!changed) {
+            document.getElementById("aiStatus").innerHTML = `⚠️ حركة ${dirName} غير مجدية حالياً، الرجاء إضافة الرقم العشوائي الجديد أولاً`;
+        } else {
+            document.getElementById("aiStatus").innerHTML = `✅ تم تنفيذ ${dirName}. الآن: أضف الرقم العشوائي الجديد (1-5) في أي خانة فارغة بالضغط عليها`;
+        }
+    }
+    
+    // جعل الخلايا قابلة للتعديل يدوياً
+    function makeCellsEditable() {
+        const container = document.getElementById("gameGrid");
+        container.innerHTML = "";
+        for (let i = 0; i < SIZE; i++) {
+            for (let j = 0; j < SIZE; j++) {
+                const val = grid[i][j];
+                const cell = document.createElement("div");
+                cell.className = "cell" + (val === 0 ? " empty" : "");
+                cell.innerText = val === 0 ? "" : val;
+                cell.style.cursor = "pointer";
+                cell.addEventListener("click", ((x, y) => () => {
+                    let newVal = prompt(`أدخل الرقم الجديد للخلية (${x+1},${y+1}):`, grid[x][y] === 0 ? "" : grid[x][y]);
+                    if (newVal !== null) {
+                        let num = parseInt(newVal);
+                        if (isNaN(num)) num = 0;
+                        grid[x][y] = num;
+                        renderGrid();
+                        makeCellsEditable();
+                    }
+                })(i, j));
+                container.appendChild(cell);
+            }
+        }
+    }
+    
+    function renderGrid() {
+        makeCellsEditable();
+    }
+    
+    document.getElementById("moveUp").addEventListener("click", () => makeMoveAndUpdate('up', 'أعلى'));
+    document.getElementById("moveDown").addEventListener("click", () => makeMoveAndUpdate('down', 'أسفل'));
+    document.getElementById("moveLeft").addEventListener("click", () => makeMoveAndUpdate('left', 'يسار'));
+    document.getElementById("moveRight").addEventListener("click", () => makeMoveAndUpdate('right', 'يمين'));
+    document.getElementById("aiSuggestBtn").addEventListener("click", aiSuggest);
     document.getElementById("resetBtn").addEventListener("click", resetGrid);
     
-    renderInputGrid();
+    resetGrid();
 </script>
 </body>
 </html>
