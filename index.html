@@ -2,28 +2,135 @@
 <html dir="rtl" lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title>الفاتحون AI - احترافي بلا أخطاء</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الفاتحون AI - الاتجاهات مضبوطة</title>
     <style>
-        *{box-sizing:border-box;user-select:none;}
-        body{background:linear-gradient(135deg,#0a2f1f,#051a0e);font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;padding:20px;}
-        .container{background:#000000bb;border-radius:60px;padding:25px;backdrop-filter:blur(5px);max-width:650px;width:100%;}
-        h1{text-align:center;color:#ffd966;margin-bottom:15px;font-size:1.5rem;}
-        .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;background:#b87c3a;padding:20px;border-radius:32px;margin-bottom:20px;}
-        .cell{background:#f7e8c8;border-radius:18px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:bold;font-family:monospace;color:#3b2a1f;box-shadow:inset 0 0 0 2px #fff3cf,0 4px 8px rgba(0,0,0,0.2);cursor:pointer;transition:0.07s;}
-        .cell.empty{background:#ecdbb8;color:#b5976b;}
-        .controls{display:flex;gap:15px;justify-content:center;flex-wrap:wrap;margin:15px 0;}
-        button{background:#f5b642;border:none;padding:12px 24px;font-size:18px;font-weight:bold;border-radius:60px;cursor:pointer;box-shadow:0 4px 0 #9b5e2c;transition:0.05s linear;}
-        button:active{transform:translateY(2px);}
-        .direction-buttons{display:flex;gap:12px;justify-content:center;margin:15px 0;flex-wrap:wrap;}
-        .dir-btn{background:#2c5a2e;box-shadow:0 4px 0 #1a3a1a;font-size:24px;padding:12px 20px;color:white;}
-        .status{background:#1e2a1acc;border-radius:50px;padding:15px;text-align:center;color:#ffecb3;font-size:1rem;margin-top:15px;}
-        .suggestion{font-size:1.3rem;font-weight:bold;background:#000000aa;display:inline-block;padding:8px 25px;border-radius:50px;margin-top:8px;}
-        @media (max-width:500px){.cell{font-size:20px;}.dir-btn{font-size:18px;padding:8px 12px;}button{padding:8px 16px;font-size:14px;}}
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background: linear-gradient(135deg, #0a2f1f, #051a0e);
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: #000000bb;
+            border-radius: 60px;
+            padding: 25px;
+            backdrop-filter: blur(5px);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #ffd966;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            background: #b87c3a;
+            padding: 20px;
+            border-radius: 32px;
+            margin-bottom: 20px;
+        }
+        .cell {
+            background: #f7e8c8;
+            border-radius: 18px;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            font-weight: bold;
+            font-family: monospace;
+            color: #3b2a1f;
+            box-shadow: inset 0 0 0 2px #fff3cf, 0 4px 8px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: 0.07s;
+        }
+        .cell.empty {
+            background: #ecdbb8;
+            color: #b5976b;
+        }
+        .direction-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        .dir-btn {
+            background: #2c5a2e;
+            box-shadow: 0 4px 0 #1a3a1a;
+            font-size: 24px;
+            padding: 12px 20px;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.05s linear;
+        }
+        .dir-btn:active {
+            transform: translateY(2px);
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        button {
+            background: #f5b642;
+            border: none;
+            padding: 12px 24px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 60px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #9b5e2c;
+            transition: 0.05s linear;
+        }
+        button:active {
+            transform: translateY(2px);
+        }
+        .status {
+            background: #1e2a1acc;
+            border-radius: 50px;
+            padding: 15px;
+            text-align: center;
+            color: #ffecb3;
+            font-size: 1rem;
+            margin-top: 15px;
+        }
+        .suggestion {
+            font-size: 1.3rem;
+            font-weight: bold;
+            background: #000000aa;
+            display: inline-block;
+            padding: 8px 25px;
+            border-radius: 50px;
+            margin-top: 8px;
+        }
+        @media (max-width: 500px) {
+            .cell { font-size: 20px; }
+            .dir-btn { font-size: 18px; padding: 8px 12px; }
+            button { padding: 8px 16px; font-size: 14px; }
+        }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>⚡ AI الفاتحون - المستوى 11 مضمون ⚡</h1>
+    <h1>🎯 AI الفاتحون - الاتجاهات مضبوطة</h1>
     <div class="grid" id="gameGrid"></div>
 
     <div class="direction-buttons">
@@ -47,7 +154,7 @@
     const SIZE = 4;
     let grid = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
 
-    // عرض الشبكة مع جعل الخلايا قابلة للتعديل (النقر المزدوج أو المفرد)
+    // عرض الشبكة مع إمكانية تعديل الخلايا
     function renderGrid() {
         const container = document.getElementById("gameGrid");
         container.innerHTML = "";
@@ -72,113 +179,123 @@
         }
     }
 
-    // تحديث نص الحالة
     function updateStatus(msg) {
         document.getElementById("statusArea").innerHTML = msg;
     }
 
-    // تنفيذ حركة السحب (قوانين 2048 بالضبط)
-    function applyMove(direction) {
-        let newGrid = grid.map(row => [...row]);
+    // دوال الحركة الصحيحة (يسار تحرك يسار، يمين تحرك يمين، إلخ)
+    function moveLeft(board) {
         let changed = false;
-
-        if (direction === 'left') {
-            for (let i = 0; i < SIZE; i++) {
-                let row = newGrid[i].filter(v => v !== 0);
-                for (let j = 0; j < row.length - 1; j++) {
-                    if (row[j] === row[j+1]) {
-                        row[j] = row[j] + 1;
-                        row.splice(j+1, 1);
-                        changed = true;
-                    }
-                }
-                while (row.length < SIZE) row.push(0);
-                if (JSON.stringify(newGrid[i]) !== JSON.stringify(row)) changed = true;
-                newGrid[i] = row;
-            }
-        }
-        else if (direction === 'right') {
-            for (let i = 0; i < SIZE; i++) {
-                let row = newGrid[i].filter(v => v !== 0);
-                for (let j = row.length - 1; j > 0; j--) {
-                    if (row[j] === row[j-1]) {
-                        row[j] = row[j] + 1;
-                        row.splice(j-1, 1);
-                        j--;
-                        changed = true;
-                    }
-                }
-                while (row.length < SIZE) row.unshift(0);
-                if (JSON.stringify(newGrid[i]) !== JSON.stringify(row)) changed = true;
-                newGrid[i] = row;
-            }
-        }
-        else if (direction === 'up') {
-            for (let j = 0; j < SIZE; j++) {
-                let col = [];
-                for (let i = 0; i < SIZE; i++) if (newGrid[i][j] !== 0) col.push(newGrid[i][j]);
-                for (let k = 0; k < col.length - 1; k++) {
-                    if (col[k] === col[k+1]) {
-                        col[k] = col[k] + 1;
-                        col.splice(k+1, 1);
-                        changed = true;
-                    }
-                }
-                while (col.length < SIZE) col.push(0);
-                for (let i = 0; i < SIZE; i++) {
-                    if (newGrid[i][j] !== col[i]) changed = true;
-                    newGrid[i][j] = col[i];
+        let newBoard = board.map(row => [...row]);
+        for (let i = 0; i < SIZE; i++) {
+            let row = newBoard[i].filter(v => v !== 0);
+            for (let j = 0; j < row.length - 1; j++) {
+                if (row[j] === row[j+1]) {
+                    row[j] = row[j] + 1;
+                    row.splice(j+1, 1);
+                    changed = true;
                 }
             }
+            while (row.length < SIZE) row.push(0);
+            if (JSON.stringify(newBoard[i]) !== JSON.stringify(row)) changed = true;
+            newBoard[i] = row;
         }
-        else if (direction === 'down') {
-            for (let j = 0; j < SIZE; j++) {
-                let col = [];
-                for (let i = 0; i < SIZE; i++) if (newGrid[i][j] !== 0) col.push(newGrid[i][j]);
-                for (let k = col.length - 1; k > 0; k--) {
-                    if (col[k] === col[k-1]) {
-                        col[k] = col[k] + 1;
-                        col.splice(k-1, 1);
-                        k--;
-                        changed = true;
-                    }
-                }
-                while (col.length < SIZE) col.unshift(0);
-                for (let i = 0; i < SIZE; i++) {
-                    if (newGrid[i][j] !== col[i]) changed = true;
-                    newGrid[i][j] = col[i];
-                }
-            }
-        }
-
-        if (changed) {
-            grid = newGrid;
-            renderGrid();
-            // فوز إذا وصلنا إلى 11
-            let maxVal = Math.max(...grid.flat());
-            if (maxVal >= 11) {
-                updateStatus("🏆 مبروك! لقد وصلت إلى المستوى 11 🏆");
-            } else {
-                updateStatus(`✅ تم تنفيذ حركة ${direction}. أضف الرقم العشوائي الجديد (1-5) بالضغط على خانة فارغة.`);
-            }
-            return true;
-        } else {
-            updateStatus(`⚠️ حركة ${direction} لم تغير شيئًا. حاول إضافة الرقم العشوائي أولاً أو اختر اتجاهاً آخر.`);
-            return false;
-        }
+        return { newBoard, changed };
     }
 
-    // ذكاء اصطناعي متطور: تقييم كل حركة بأخذ الفراغات والمستقبل
+    function moveRight(board) {
+        let changed = false;
+        let newBoard = board.map(row => [...row]);
+        for (let i = 0; i < SIZE; i++) {
+            let row = newBoard[i].filter(v => v !== 0);
+            for (let j = row.length - 1; j > 0; j--) {
+                if (row[j] === row[j-1]) {
+                    row[j] = row[j] + 1;
+                    row.splice(j-1, 1);
+                    j--;
+                    changed = true;
+                }
+            }
+            while (row.length < SIZE) row.unshift(0);
+            if (JSON.stringify(newBoard[i]) !== JSON.stringify(row)) changed = true;
+            newBoard[i] = row;
+        }
+        return { newBoard, changed };
+    }
+
+    function moveUp(board) {
+        let changed = false;
+        let newBoard = board.map(row => [...row]);
+        for (let j = 0; j < SIZE; j++) {
+            let col = [];
+            for (let i = 0; i < SIZE; i++) if (newBoard[i][j] !== 0) col.push(newBoard[i][j]);
+            for (let k = 0; k < col.length - 1; k++) {
+                if (col[k] === col[k+1]) {
+                    col[k] = col[k] + 1;
+                    col.splice(k+1, 1);
+                    changed = true;
+                }
+            }
+            while (col.length < SIZE) col.push(0);
+            for (let i = 0; i < SIZE; i++) {
+                if (newBoard[i][j] !== col[i]) changed = true;
+                newBoard[i][j] = col[i];
+            }
+        }
+        return { newBoard, changed };
+    }
+
+    function moveDown(board) {
+        let changed = false;
+        let newBoard = board.map(row => [...row]);
+        for (let j = 0; j < SIZE; j++) {
+            let col = [];
+            for (let i = 0; i < SIZE; i++) if (newBoard[i][j] !== 0) col.push(newBoard[i][j]);
+            for (let k = col.length - 1; k > 0; k--) {
+                if (col[k] === col[k-1]) {
+                    col[k] = col[k] + 1;
+                    col.splice(k-1, 1);
+                    k--;
+                    changed = true;
+                }
+            }
+            while (col.length < SIZE) col.unshift(0);
+            for (let i = 0; i < SIZE; i++) {
+                if (newBoard[i][j] !== col[i]) changed = true;
+                newBoard[i][j] = col[i];
+            }
+        }
+        return { newBoard, changed };
+    }
+
+    // تنفيذ الحركة مع التحقق من التغيير
+    function applyMove(direction, moveFunction, dirName) {
+        let { newBoard, changed } = moveFunction(grid);
+        if (!changed) {
+            updateStatus(`⚠️ حركة ${dirName} لم تغير شيئًا. حاول اتجاهاً آخر أو أضف أرقاماً جديدة.`);
+            return false;
+        }
+        grid = newBoard;
+        renderGrid();
+        let maxVal = Math.max(...grid.flat());
+        if (maxVal >= 11) {
+            updateStatus("🏆 مبروك! وصلت إلى المستوى 11 🏆");
+        } else {
+            updateStatus(`✅ تم تنفيذ ${dirName}. الآن: أضف الرقم العشوائي الجديد (1-5) بالضغط على خانة فارغة.`);
+        }
+        return true;
+    }
+
+    // تقييم الشبكة للذكاء الاصطناعي
     function evaluateBoard(board) {
         let maxVal = 0, empty = 0, score = 0;
-        for (let i=0; i<SIZE; i++) {
-            for (let j=0; j<SIZE; j++) {
+        for (let i = 0; i < SIZE; i++) {
+            for (let j = 0; j < SIZE; j++) {
                 let v = board[i][j];
                 if (v > maxVal) maxVal = v;
                 if (v === 0) empty++;
                 score += v * v;
-                // تشجيع الأرقام الكبيرة في الزوايا
-                if ((i===0 || i===SIZE-1) && (j===0 || j===SIZE-1) && v >= 5) score += v * 100;
+                if ((i === 0 || i === SIZE-1) && (j === 0 || j === SIZE-1) && v >= 5) score += v * 100;
             }
         }
         if (maxVal >= 11) score += 1000000;
@@ -187,79 +304,34 @@
         return score;
     }
 
-    function simulateMoveOnCopy(board, direction) {
-        let copy = board.map(row => [...row]);
-        let changed = false;
-        if (direction === 'left') {
-            for (let i=0; i<SIZE; i++) {
-                let row = copy[i].filter(v=>v!==0);
-                for (let j=0; j<row.length-1; j++) {
-                    if (row[j] === row[j+1]) { row[j]++; row.splice(j+1,1); changed=true; }
-                }
-                while(row.length<SIZE) row.push(0);
-                if(JSON.stringify(copy[i]) !== JSON.stringify(row)) changed=true;
-                copy[i] = row;
-            }
-        } else if (direction === 'right') {
-            for (let i=0; i<SIZE; i++) {
-                let row = copy[i].filter(v=>v!==0);
-                for (let j=row.length-1; j>0; j--) {
-                    if(row[j] === row[j-1]) { row[j]++; row.splice(j-1,1); j--; changed=true; }
-                }
-                while(row.length<SIZE) row.unshift(0);
-                if(JSON.stringify(copy[i]) !== JSON.stringify(row)) changed=true;
-                copy[i] = row;
-            }
-        } else if (direction === 'up') {
-            for (let j=0; j<SIZE; j++) {
-                let col = [];
-                for (let i=0; i<SIZE; i++) if(copy[i][j]!==0) col.push(copy[i][j]);
-                for (let k=0; k<col.length-1; k++) {
-                    if(col[k] === col[k+1]) { col[k]++; col.splice(k+1,1); changed=true; }
-                }
-                while(col.length<SIZE) col.push(0);
-                for (let i=0; i<SIZE; i++) if(copy[i][j] !== col[i]) changed=true;
-                for (let i=0; i<SIZE; i++) copy[i][j] = col[i];
-            }
-        } else if (direction === 'down') {
-            for (let j=0; j<SIZE; j++) {
-                let col = [];
-                for (let i=0; i<SIZE; i++) if(copy[i][j]!==0) col.push(copy[i][j]);
-                for (let k=col.length-1; k>0; k--) {
-                    if(col[k] === col[k-1]) { col[k]++; col.splice(k-1,1); k--; changed=true; }
-                }
-                while(col.length<SIZE) col.unshift(0);
-                for (let i=0; i<SIZE; i++) if(copy[i][j] !== col[i]) changed=true;
-                for (let i=0; i<SIZE; i++) copy[i][j] = col[i];
-            }
-        }
-        return changed ? copy : null;
-    }
-
     function getBestDirection() {
-        let dirs = ['up', 'down', 'left', 'right'];
+        const moves = {
+            'up': moveUp, 'down': moveDown, 'left': moveLeft, 'right': moveRight
+        };
+        const dirNames = {
+            'up': '⬆️ أعلى', 'down': '⬇️ أسفل', 'left': '⬅️ يسار', 'right': '➡️ يمين'
+        };
         let bestDir = null;
         let bestScore = -Infinity;
-        for (let dir of dirs) {
-            let after = simulateMoveOnCopy(grid, dir);
-            if (after) {
-                let score = evaluateBoard(after);
+        for (let [dir, func] of Object.entries(moves)) {
+            let { newBoard, changed } = func(grid);
+            if (changed) {
+                let score = evaluateBoard(newBoard);
                 if (score > bestScore) {
                     bestScore = score;
                     bestDir = dir;
                 }
             }
         }
-        return bestDir;
+        return bestDir ? dirNames[bestDir] : null;
     }
 
     function aiAdvice() {
         let best = getBestDirection();
-        let dirNames = {'up':'⬆️ أعلى', 'down':'⬇️ أسفل', 'left':'⬅️ يسار', 'right':'➡️ يمين'};
         if (best) {
-            updateStatus(`🧠 نصيحة AI: <span class="suggestion">${dirNames[best]}</span><br> اضغط على السهم المناسب لتنفيذها.`);
+            updateStatus(`🧠 نصيحة AI: <span class="suggestion">${best}</span><br> اضغط على السهم المناسب لتنفيذها.`);
         } else {
-            updateStatus(`⚠️ لا توجد حركة صالحة! تأكد من وجود أرقام متطابقة في صف أو عمود، أو أضف أرقامًا جديدة.`);
+            updateStatus(`⚠️ لا توجد حركة صالحة! تأكد من وجود أرقام متطابقة في صف أو عمود، أو أضف أرقاماً جديدة.`);
         }
     }
 
@@ -270,10 +342,10 @@
     }
 
     // ربط الأزرار
-    document.getElementById("moveUp").addEventListener("click", () => applyMove('up'));
-    document.getElementById("moveDown").addEventListener("click", () => applyMove('down'));
-    document.getElementById("moveLeft").addEventListener("click", () => applyMove('left'));
-    document.getElementById("moveRight").addEventListener("click", () => applyMove('right'));
+    document.getElementById("moveUp").addEventListener("click", () => applyMove('up', moveUp, 'أعلى'));
+    document.getElementById("moveDown").addEventListener("click", () => applyMove('down', moveDown, 'أسفل'));
+    document.getElementById("moveLeft").addEventListener("click", () => applyMove('left', moveLeft, 'يسار'));
+    document.getElementById("moveRight").addEventListener("click", () => applyMove('right', moveRight, 'يمين'));
     document.getElementById("aiAdviceBtn").addEventListener("click", aiAdvice);
     document.getElementById("resetBtn").addEventListener("click", resetGame);
 
